@@ -10,7 +10,7 @@ var aColor;
 var bufferObject;
 var axis;
 
-var cameraRot = [0.0, 0.0];
+var cameraRot = [0.0, 0.0, 0.0];
 var cameraLookAt = [0.0, 0.0, -3.0];
 var cameraDist = 5.0;
 
@@ -121,7 +121,7 @@ function updateViewport() {
 	}
 }
 
-function start(v,c) {
+function start(c) {
 	canvasElement = document.getElementById(c);
 
 	init(canvasElement, "shader-fs", "shader-vs");
@@ -223,7 +223,7 @@ function loadPly(data) {
 	if (bufferObject) {
 		bufferObject.free(gl);
 	}
-	cameraRot = [Math.PI, 0];
+	cameraRot = [Math.PI, 0.0, 0.0];
 	bufferObject = new GLDrawable();
 	bufferObject.init(gl, vert, null, color, vertexIndices);
 }
