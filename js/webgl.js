@@ -50,7 +50,7 @@ GLDrawable.prototype.draw = function(gl) {
 		gl.vertexAttribPointer(aColor, 4, gl.FLOAT, false, 0, offset * 4 * 4);
 
 		// draw
-		gl.drawElements(this.drawMode, Math.min(this.vertexes - offset, 65536), gl.UNSIGNED_SHORT, offset);
+		gl.drawElements(this.drawMode, Math.min(this.vertexes - offset, 65536), gl.UNSIGNED_SHORT, offset * 2);
 	}
 
 }
