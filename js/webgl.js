@@ -7,9 +7,7 @@ var aPosition;
 var aColor;
 
 // gl buffers
-var vertBuffer;
-var colorBuffer;
-var vertIndexBuffer;
+var bufferObject;
 
 var cameraRot = [0.0, 0.0];
 var cameraLookAt = [0.0, 0.0, -3.0];
@@ -26,6 +24,63 @@ var canvasElement;
 var distLimit =  null;
 var intervalID;
 var videoFrame = 0;
+
+
+function GLDrawable() {
+	this.vertBuffer = null; // attribute vec3 aPosition;
+	this.normBuffer = null; // attribute vec4 aNormal
+	this.colorBuffer = null; // attribute vec4 aColor
+	this.indexBuffer = null;
+	this.drawMode = gl.POINTS; // gl.TRIANGLES
+	this.vertexes = 0;
+}
+
+GLDrawable.prototype.draw = function(gl) {
+	// index
+	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+
+	for (var offset = 0; offset < this.vertexes; offset+=65536 ) {
+		// vertex
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.vertBuffer);
+		gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, 0, offset * 4 * 3);
+	
+		// color
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
+		gl.vertexAttribPointer(aColor, 4, gl.FLOAT, false, 0, offset * 4 * 4);
+	
+		// draw
+		gl.drawElements(this.drawMode, Math.min(this.vertexes - offset, 65536), gl.UNSIGNED_SHORT, offset);
+	}
+
+}
+
+GLDrawable.prototype.init = function(gl, verts, norm, colors, indices) {
+	this.free();
+	this.vertexes = verts.length / 3;
+
+	this.vertBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.vertBuffer);
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.STATIC_DRAW);
+
+	this.colorBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+
+	this.indexBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+}
+
+GLDrawable.prototype.free = function(gl) {
+	if (this.vertBuffer) {
+		gl.deleteBuffer(this.vertBuffer);
+		gl.deleteBuffer(this.colorBuffer);
+		gl.deleteBuffer(this.indexBuffer);
+		this.vertBuffer = null;
+	}
+}
+
+
 
 
 function init(canvas, fragmentShaderId, vertexShaderId) {
@@ -127,20 +182,13 @@ function initBuffers(data) {
 		}
 	}
 	console.log(points);
+	
+	if (bufferObject) {
+		bufferObject.free(gl);
+	}
+	bufferObject = new GLDrawable();
+	bufferObject.init(gl, vert, null, color, vertexIndices);
 
-	vertBuffer = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, vertBuffer);
-	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vert), gl.STATIC_DRAW);
-
-
-	colorBuffer = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(color), gl.STATIC_DRAW);
-
-	var indexIntBuffer =  new Uint16Array(vertexIndices);
-	vertIndexBuffer = gl.createBuffer();
-	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, vertIndexBuffer);
-	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexIntBuffer, gl.STATIC_DRAW);
 
 	//if (document.getElementById("gluicanvas")) {
 	//	var canvas = document.getElementById("gluicanvas");
@@ -187,21 +235,7 @@ function drawScene() {
 
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-	// vertex
-	gl.bindBuffer(gl.ARRAY_BUFFER, vertBuffer);
-	gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, 0, 0);
-
-	// color
-	gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-	gl.vertexAttribPointer(aColor, 4, gl.FLOAT, false, 0, 0);
-
-	// index
-	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, vertIndexBuffer);
-
-	// draw
-	//gl.drawElements(gl.TRIANGLES, 3, gl.UNSIGNED_SHORT, 0);
-
-	gl.drawElements(gl.POINTS, points, gl.UNSIGNED_SHORT, 0);
+	bufferObject.draw(gl);
 
 /*
 	if (uiPanelVisible && uiPanelTexture) {

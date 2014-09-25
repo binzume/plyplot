@@ -65,17 +65,25 @@
 			dragY = e.clientY;
 		});
 
+		document.getElementById("glcanvas").addEventListener('contextmenu', function(e){
+			e.preventDefault();
+		});
+
 		document.body.addEventListener('mouseup', function(e){
 			drag = false;
 		});
 
 		document.body.addEventListener('mousemove', function(e){
 			if (drag) {
-				if (e.button == 1) {
+				if (e.button == 2) {
 					cameraDist -= (e.clientY - dragY) * 0.01;
-				} else if (e.button == 2) {
-					cameraLookAt[0] -= (e.clientX - dragX) * 0.01;
-					cameraLookAt[1] += (e.clientY - dragY) * 0.01;
+				} else if (e.button == 1) {
+					var d = vec3.fromValues((e.clientX - dragX) * 0.01, -(e.clientY - dragY) * 0.01, 0);
+					vec3.rotateX(d, d, [0,0,0], -cameraRot[0]);
+					vec3.rotateY(d, d, [0,0,0], -cameraRot[1]);
+					vec3.add(cameraLookAt, cameraLookAt, d);
+					//cameraLookAt[0] -= (e.clientX - dragX) * 0.01;
+					//cameraLookAt[1] += (e.clientY - dragY) * 0.01;
 				} else {
 					cameraRot[1] -= (e.clientX - dragX) * 0.01;
 					cameraRot[0] += (e.clientY - dragY) * 0.01;
