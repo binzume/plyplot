@@ -1,4 +1,59 @@
 
+
+function loadPly(data) {
+
+	var vert = [];
+	var color = [];
+	var vertexIndices = [];
+
+	// load!
+	var vertcount = 0;
+	var lines = data.split("\n");
+	var startdata = false;
+	var props = 0;
+	var cols = {'x':0,'y':1,'z':2};
+	for (var i = 0; i<lines.length; i++) {
+		var row = lines[i].trim().split(/\s+/);
+		if (!startdata) {
+			if (row[0] == "end_header") {
+				startdata = true;
+				if (!cols['red']) cols['red'] = cols['diffuse_red'];
+				if (!cols['green']) cols['green'] = cols['diffuse_green'];
+				if (!cols['blue']) cols['blue'] = cols['diffuse_blue'];
+			}
+			if (row[0] == "property") {
+				cols[row[2]] = props;
+				props++;
+			}
+			if (row[0] == "element" && row[1] == "vertex") {
+				vertcount = parseInt(row[2]);
+			}
+		} else if (vertexIndices.length < vertcount && row.length >= 3) {
+			var x = parseFloat(row[0]), y = parseFloat(row[1]), z = parseFloat(row[2]);
+			if (distLimit && (x+cameraLookAt[0])*(x+cameraLookAt[0]) + (z+cameraLookAt[2])*(z+cameraLookAt[2]) + (y*y)> distLimit * distLimit) {
+				continue;
+			}
+			vert.push(x, y, z);
+			if (cols['red']) {
+				color.push(parseFloat(row[cols['red']])/255,parseFloat(row[cols['green']])/255,parseFloat(row[cols['blue']])/255, 1.0);
+			} else if (cols['intensity']) {
+				color.push(parseFloat(row[cols['intensity']]), parseFloat(row[cols['intensity']]), parseFloat(row[cols['intensity']]), 1.0);
+			} else {
+				color.push(1.0, 1.0, 1.0, 1.0);
+			}
+			vertexIndices.push(vertexIndices.length);
+		}
+	}
+	console.log(vertexIndices.length);
+	
+	if (bufferObject) {
+		bufferObject.free(gl);
+	}
+	cameraRot = [Math.PI, 0.0, 0.0];
+	bufferObject = new GLDrawable();
+	bufferObject.init(gl, vert, null, color, vertexIndices);
+}
+
 function getxhr() {
 	var xhr;
 	if(window.XMLHttpRequest) {
