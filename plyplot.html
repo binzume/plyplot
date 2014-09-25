@@ -1,0 +1,129 @@
+<html>
+ <head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Script-Type" content="text/javascript" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>ply plot</title>
+  <link rel=stylesheet type="text/css" href="css/style.css" />
+  <script src="js/gl-matrix-min.js" type="text/javascript"></script>
+  <script src="js/webgl.js" type="text/javascript"></script>
+  <script id="shader-fs" type="x-shader/x-fragment">
+    precision highp float;
+    varying vec4 color;
+    void main(void) {
+       gl_FragColor = color;
+    }
+  </script>
+  <script id="shader-vs" type="x-shader/x-vertex">
+	precision highp float;
+	attribute vec3 aPosition;
+	attribute vec4 aColor;
+	uniform mat4 uMVMatrix;
+	uniform mat4 uPMatrix;
+	varying vec4 color;
+
+	void main(void) {
+		gl_Position = uPMatrix * uMVMatrix * vec4(aPosition, 1.0);
+		gl_PointSize = 3.0;
+		color = aColor;
+	}
+  </script>
+
+  <script>
+	function fullScreen(f) {
+		var canvas = document.getElementById('glcanvas');
+		if (f) {
+		    if(canvas.requestFullScreen ) {
+		      canvas.style.width = window.screen.width + "px";
+		      canvas.style.height = window.screen.height + "px";
+		      canvas.requestFullScreen();
+		    } else if(canvas.webkitRequestFullScreen ) {
+		      canvas.style.width = window.screen.width + "px";
+		      canvas.style.height = window.screen.height + "px";
+		      canvas.webkitRequestFullScreen();
+		    }else if(canvas.mozRequestFullScreen ) {
+		      canvas.mozRequestFullScreen();
+		    }
+		} else {
+		    document.webkitExitFullscreen();
+		}
+	}
+
+	var drag = false;
+	var dragX = 0, dragY = 0;
+	window.addEventListener('load',(function(e){
+		start("video", "glcanvas");
+		
+		document.getElementById('refresh').addEventListener('click',(function(e){
+			initBuffers(document.getElementById('ply').value);
+		}),false);
+
+		document.getElementById("glcanvas").addEventListener('mousedown', function(e){
+			drag = true;
+			dragX = e.clientX;
+			dragY = e.clientY;
+		});
+
+		document.body.addEventListener('mouseup', function(e){
+			drag = false;
+		});
+
+		document.body.addEventListener('mousemove', function(e){
+			if (drag) {
+				if (e.button == 1) {
+					cameraDist -= (e.clientY - dragY) * 0.01;
+				} else if (e.button == 2) {
+					cameraLookAt[0] -= (e.clientX - dragX) * 0.01;
+					cameraLookAt[1] += (e.clientY - dragY) * 0.01;
+				} else {
+					cameraRot[1] -= (e.clientX - dragX) * 0.01;
+					cameraRot[0] += (e.clientY - dragY) * 0.01;
+				}
+				dragX = e.clientX;
+				dragY = e.clientY;
+			}
+		});
+
+
+		document.body.addEventListener('dragover', function(e){
+			e.preventDefault();
+		});
+		document.body.addEventListener('drop', function(e){
+			e.preventDefault();
+			if (e.dataTransfer.getData('URL')) {
+		    	console.log(e.dataTransfer.getData('URL'));
+		    	console.log(e.dataTransfer.getData('text/html'));
+		    }
+			var file = e.dataTransfer.files[0];
+			if (file) {
+				var reader = new FileReader();
+				reader.readAsText(file);
+				reader.onload = function(ev){
+					initBuffers(reader.result);
+				}
+			}
+		});
+
+	}),false);
+
+  </script>
+ </head>
+ <body>
+
+  <div id="screen">
+    <canvas id="glcanvas" tabindex='1' width="1280" height="720"></canvas>
+  </div>
+
+<ul>
+<li>Drag and drop .ply file.</li>
+</ul>
+
+<textarea id="ply">
+</textarea>
+<button id="refresh">Apply</button>
+
+
+</body>
+</html>
+
