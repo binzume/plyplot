@@ -31,7 +31,7 @@ function fullScreen(f) {
 }
 
 function checkLocationHash() {
-	var m = location.hash.match(/^#url=([^&]+)/);
+	var m = location.hash.match(/^#ply=([^&]+)/);
 	if (m) {
 		var xhr = getxhr();
 		xhr.open('GET', m[1]);
