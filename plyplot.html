@@ -32,35 +32,40 @@
 
   <script>
 	function fullScreen(f) {
-		var canvas = document.getElementById('glcanvas');
+		var canvas = document.getElementById('screen');
 		if (f) {
 		    if(canvas.requestFullScreen ) {
-		      canvas.style.width = window.screen.width + "px";
-		      canvas.style.height = window.screen.height + "px";
 		      canvas.requestFullScreen();
 		    } else if(canvas.webkitRequestFullScreen ) {
-		      canvas.style.width = window.screen.width + "px";
-		      canvas.style.height = window.screen.height + "px";
 		      canvas.webkitRequestFullScreen();
 		    }else if(canvas.mozRequestFullScreen ) {
 		      canvas.mozRequestFullScreen();
+		    }else if(canvas.msRequestFullscreen) {
+		      canvas.msRequestFullscreen();
 		    }
 		} else {
-		    document.webkitExitFullscreen();
+		    canvas.webkitExitFullscreen();
 		}
 	}
 
 	var drag = false;
+	var button = 0;
 	var dragX = 0, dragY = 0;
 	window.addEventListener('load',(function(e){
 		start("video", "glcanvas");
 		
 		document.getElementById('refresh').addEventListener('click',(function(e){
-			initBuffers(document.getElementById('ply').value);
+			loadPly(document.getElementById('ply').value);
+		}),false);
+
+		document.getElementById('fullscreen_button').addEventListener('click',(function(e){
+			fullScreen(true);
 		}),false);
 
 		document.getElementById("glcanvas").addEventListener('mousedown', function(e){
+			e.preventDefault();
 			drag = true;
+			button = e.button; // MSIE
 			dragX = e.clientX;
 			dragY = e.clientY;
 		});
@@ -75,9 +80,10 @@
 
 		document.body.addEventListener('mousemove', function(e){
 			if (drag) {
-				if (e.button == 2) {
+				if (button == 2) {
 					cameraDist -= (e.clientY - dragY) * 0.01;
-				} else if (e.button == 1) {
+					cameraDist = Math.max(cameraDist, 1.0);
+				} else if (button == 1) {
 					var d = vec3.fromValues((e.clientX - dragX) * 0.01, -(e.clientY - dragY) * 0.01, 0);
 					vec3.rotateX(d, d, [0,0,0], -cameraRot[0]);
 					vec3.rotateY(d, d, [0,0,0], -cameraRot[1]);
@@ -108,7 +114,7 @@
 				var reader = new FileReader();
 				reader.readAsText(file);
 				reader.onload = function(ev){
-					initBuffers(reader.result);
+					loadPly(reader.result);
 				}
 			}
 		});
@@ -120,11 +126,13 @@
  <body>
 
   <div id="screen">
-    <canvas id="glcanvas" tabindex='1' width="1280" height="720"></canvas>
+    <canvas id="glcanvas" tabindex='1'></canvas><br />
   </div>
+	<button id="fullscreen_button">Full Screen</button>
 
 <ul>
 <li>Drag and drop .ply file.</li>
+<li>or, paste the ply content to a following textarea.</li>
 </ul>
 
 <textarea id="ply">

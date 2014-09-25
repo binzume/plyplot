@@ -1,4 +1,30 @@
-#screen {
-	width:100%;
-	text-align:center;
+body {
+	margin: 0px;
 }
+#screen {
+	width: 100%;
+	height: 720px;
+	min-width: 640px;
+	max-width: 1280px;
+	text-align: center;
+	margin: 0 auto;
+}
+
+#screen:fullscreen {
+	width: 100%;
+	height: 100%;
+	max-width: 100%;
+}
+
+#screen:-webkit-full-screen {
+	width: 100%;
+	height: 100%;
+	max-width: 100%;
+}
+
+
+#glcanvas {
+	width: 100%;
+	height: 100%;
+}
+

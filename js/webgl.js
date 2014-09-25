@@ -8,6 +8,7 @@ var aColor;
 
 // gl buffers
 var bufferObject;
+var axis;
 
 var cameraRot = [0.0, 0.0];
 var cameraLookAt = [0.0, 0.0, -3.0];
@@ -43,11 +44,11 @@ GLDrawable.prototype.draw = function(gl) {
 		// vertex
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.vertBuffer);
 		gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, 0, offset * 4 * 3);
-	
+
 		// color
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
 		gl.vertexAttribPointer(aColor, 4, gl.FLOAT, false, 0, offset * 4 * 4);
-	
+
 		// draw
 		gl.drawElements(this.drawMode, Math.min(this.vertexes - offset, 65536), gl.UNSIGNED_SHORT, offset);
 	}
@@ -108,11 +109,27 @@ function init(canvas, fragmentShaderId, vertexShaderId) {
 	uMVMatrix = gl.getUniformLocation(shaderProgram, "uMVMatrix");
 }
 
+function updateViewport() {
+	var w = canvasElement.clientWidth;
+	var h = canvasElement.clientHeight;
+	console.log([w,h]);
+	if (canvasElement.width != w || canvasElement.height != h) {
+		canvasElement.width = w;
+		canvasElement.height = h;
+		gl.viewport(0, 0, w, h);
+		mat4.perspective(pMatrix, glMatrix.toRadian(60), w/h, 0.1, 100 );
+	}
+}
 
 function start(v,c) {
 	canvasElement = document.getElementById(c);
-	
+
 	init(canvasElement, "shader-fs", "shader-vs");
+
+	updateViewport();
+	window.addEventListener('resize', function(e){
+		updateViewport();
+	});
 
 	gl.clearColor(0.0, 0.0, 0.0, 1.0);
 	gl.clearDepth(1.0);
@@ -125,32 +142,52 @@ function start(v,c) {
 	gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 	gl.enable(gl.BLEND);
 	gl.enable(gl.DEPTH_TEST);
-	initBuffers("");
+	
+	axis = createAxisLines(gl);
 
-	// intervalID = requestAnimationFrame(drawScene);
+	if (intervalID) {
+		clearInterval(intervalID);
+		// cancelAnimationFrame(intervalID);
+	}
 	intervalID = setInterval(drawScene, 50);
-	// clearInterval(intervalID);
-	// cancelAnimationFrame(intervalID);
+	// intervalID = requestAnimationFrame(drawScene);
 }
 
-function initBuffers(data) {
-
-	var vert = [
-//		1.0, 1.0, 0.0,
-//		0.0, 0.0, 0.0,
-//		2.0, 0.0, 0.0
+function createAxisLines(gl) {
+	var sz = 1.0;
+	var verts = [
+		0.0, 0.0, 0.0,
+		sz , 0.0, 0.0,
+		0.0, 0.0, 0.0,
+		0.0, sz , 0.0,
+		0.0, 0.0, 0.0,
+		0.0, 0.0, sz
 	];
 
-	var color = [
-//		1.0, 0.0, 0.0, 1.0,
-//		0.0, 1.0, 0.0, 1.0,
-//		0.0, 0.0, 1.0, 1.0
+	var colors = [
+		1.0, 0.0, 0.0, 1.0,
+		1.0, 0.0, 0.0, 1.0,
+		0.0, 1.0, 0.0, 1.0,
+		0.0, 1.0, 0.0, 1.0,
+		0.0, 0.0, 1.0, 1.0,
+		0.0, 0.0, 1.0, 1.0
 	];
 
-	// index
-	var vertexIndices = [
-//		0,  1,  2
-	]
+	var indices = [
+		0, 1, 2, 3, 4, 5
+	];
+
+	var o = new GLDrawable();
+	o.init(gl, verts, null, colors, indices);
+	o.drawMode = gl.LINES;
+	return o;
+}
+
+function loadPly(data) {
+
+	var vert = [];
+	var color = [];
+	var vertexIndices = [];
 
 	// load!
 	points = 0;
@@ -186,39 +223,14 @@ function initBuffers(data) {
 	if (bufferObject) {
 		bufferObject.free(gl);
 	}
+	cameraRot = [Math.PI, 0];
 	bufferObject = new GLDrawable();
 	bufferObject.init(gl, vert, null, color, vertexIndices);
-
-
-	//if (document.getElementById("gluicanvas")) {
-	//	var canvas = document.getElementById("gluicanvas");
-	//	uiPanelTexture = createTexture();
-	//	updateTexture(uiPanelTexture, canvas);
-	//}
-
-}
-
-function createTexture() {
-	// NPOT textures may be ok...
-	var tex = gl.createTexture();
-	gl.bindTexture(gl.TEXTURE_2D, tex);
-	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-	gl.bindTexture(gl.TEXTURE_2D, null);
-	return tex;
-}
-
-function updateTexture(tex, video) {
-	gl.bindTexture(gl.TEXTURE_2D, tex);
-	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video);
 }
 
 function drawScene() {
 	videoFrame ++;
-	//updateTexture(videoTexture, videoElement);
-	
+
 	//var mMatrix = mat4.create();
 	//var pMatrix = mat4.create();
 	var mMatrix = mat4.create();
@@ -235,16 +247,11 @@ function drawScene() {
 
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-	bufferObject.draw(gl);
+	axis.draw(gl);
 
-/*
-	if (uiPanelVisible && uiPanelTexture) {
-		gl.activeTexture(gl.TEXTURE1);
-		gl.bindTexture(gl.TEXTURE_2D, uiPanelTexture);
-		gl.uniform1i(gl.getUniformLocation(shaderProgram, "u_sampler"), 1);
-		gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
+	if (bufferObject) {
+		bufferObject.draw(gl);
 	}
-*/
 
 //	intervalID = requestAnimationFrame(drawScene);
 }
