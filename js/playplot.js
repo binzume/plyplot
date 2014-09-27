@@ -51,7 +51,7 @@ function loadPly(data) {
 	}
 	cameraRot = [Math.PI, 0.0, 0.0];
 	bufferObject = new GLDrawable();
-	bufferObject.init(gl, vert, null, color, vertexIndices);
+	bufferObject.init(gl, vert, null, color, null);
 }
 
 function getxhr() {

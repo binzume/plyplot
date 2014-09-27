@@ -33,25 +33,38 @@ function GLDrawable() {
 	this.indexBuffer = null;
 	this.drawMode = gl.POINTS; // gl.TRIANGLES
 	this.vertexes = 0;
+	this.draw = function(){};
 }
 
-GLDrawable.prototype.draw = function(gl) {
+GLDrawable.prototype.drawElements = function(gl) {
+	var offset = 0;
+
+	// vertex
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.vertBuffer);
+	gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, 0, offset * 4 * 3);
+
+	// color
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
+	gl.vertexAttribPointer(aColor, 4, gl.FLOAT, false, 0, offset * 4 * 4);
+
 	// index
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
 
-	for (var offset = 0; offset < this.vertexes; offset+=65536 ) { // must gl.POINTS if vertexes > 65536
-		// vertex
-		gl.bindBuffer(gl.ARRAY_BUFFER, this.vertBuffer);
-		gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, 0, offset * 4 * 3);
+	// draw
+	gl.drawElements(this.drawMode, this.vertexes, gl.UNSIGNED_SHORT, offset * 2);
+}
 
-		// color
-		gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
-		gl.vertexAttribPointer(aColor, 4, gl.FLOAT, false, 0, offset * 4 * 4);
+GLDrawable.prototype._drawArrays = function(gl) {
+	// vertex
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.vertBuffer);
+	gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, 0, 0);
 
-		// draw
-		gl.drawElements(this.drawMode, Math.min(this.vertexes - offset, 65536), gl.UNSIGNED_SHORT, offset * 2);
-	}
+	// color
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
+	gl.vertexAttribPointer(aColor, 4, gl.FLOAT, false, 0, 0);
 
+	// draw
+	gl.drawArrays(this.drawMode, 0, this.vertexes);
 }
 
 GLDrawable.prototype.init = function(gl, verts, norm, colors, indices) {
@@ -66,9 +79,14 @@ GLDrawable.prototype.init = function(gl, verts, norm, colors, indices) {
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
 	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
 
-	this.indexBuffer = gl.createBuffer();
-	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
-	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+	if (indices) {
+		this.indexBuffer = gl.createBuffer();
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices.slice(0,65536)), gl.STATIC_DRAW);
+		this.draw = this._drawElements;
+	} else {
+		this.draw = this._drawArrays;
+	}
 }
 
 GLDrawable.prototype.free = function(gl) {
@@ -77,6 +95,9 @@ GLDrawable.prototype.free = function(gl) {
 		gl.deleteBuffer(this.colorBuffer);
 		gl.deleteBuffer(this.indexBuffer);
 		this.vertBuffer = null;
+		this.normBuffer = null;
+		this.colorBuffer = null;
+		this.indexBuffer = null;
 	}
 }
 
@@ -111,7 +132,6 @@ function init(canvas, fragmentShaderId, vertexShaderId) {
 function updateViewport() {
 	var w = canvasElement.clientWidth;
 	var h = canvasElement.clientHeight;
-	console.log([w,h]);
 	if (canvasElement.width != w || canvasElement.height != h) {
 		canvasElement.width = w;
 		canvasElement.height = h;
@@ -172,12 +192,8 @@ function createAxisLines(gl) {
 		0.0, 0.0, 1.0, 1.0
 	];
 
-	var indices = [
-		0, 1, 2, 3, 4, 5
-	];
-
 	var o = new GLDrawable();
-	o.init(gl, verts, null, colors, indices);
+	o.init(gl, verts, null, colors, null);
 	o.drawMode = gl.LINES;
 	return o;
 }
