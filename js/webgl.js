@@ -223,6 +223,8 @@ function drawScene() {
 		bufferObject.draw(gl);
 	}
 
+	gl.flush();
+
 //	intervalID = requestAnimationFrame(drawScene);
 }
 
