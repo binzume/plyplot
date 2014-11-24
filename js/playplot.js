@@ -114,16 +114,16 @@ window.addEventListener('load',(function(e){
 		fullScreen(true);
 	}),false);
 
+	document.getElementById("glcanvas").addEventListener('contextmenu', function(e){
+		e.preventDefault();
+	});
+
 	document.getElementById("glcanvas").addEventListener('mousedown', function(e){
 		e.preventDefault();
 		drag = true;
 		button = e.button; // MSIE
 		dragX = e.clientX;
 		dragY = e.clientY;
-	});
-
-	document.getElementById("glcanvas").addEventListener('contextmenu', function(e){
-		e.preventDefault();
 	});
 
 	document.body.addEventListener('mouseup', function(e){
@@ -148,6 +148,39 @@ window.addEventListener('load',(function(e){
 			}
 			dragX = e.clientX;
 			dragY = e.clientY;
+		}
+	});
+
+	document.getElementById("glcanvas").addEventListener('touchstart', function(e){
+		e.preventDefault();
+		drag = true;
+		button = e.targetTouches.length;
+		dragX = e.targetTouches[0].clientX;
+		dragY = e.targetTouches[0].clientY;
+	});
+
+	document.body.addEventListener('touchend', function(e){
+		drag = false;
+	});
+
+	document.body.addEventListener('touchmove', function(e){
+		if (drag) {
+			if (button == 2) {
+				cameraDist -= (e.targetTouches[0].clientY - dragY) * 0.01;
+				cameraDist = Math.max(cameraDist, 1.0);
+			} else if (button == 1) {
+				cameraRot[1] -= (e.targetTouches[0].clientX - dragX) * 0.01;
+				cameraRot[0] += (e.targetTouches[0].clientY - dragY) * 0.01;
+			} else {
+				var d = vec3.fromValues((e.targetTouches[0].clientX - dragX) * 0.01, -(e.targetTouches[0].clientY - dragY) * 0.01, 0);
+				vec3.rotateX(d, d, [0,0,0], -cameraRot[0]);
+				vec3.rotateY(d, d, [0,0,0], -cameraRot[1]);
+				vec3.add(cameraLookAt, cameraLookAt, d);
+				//cameraLookAt[0] -= (e.clientX - dragX) * 0.01;
+				//cameraLookAt[1] += (e.clientY - dragY) * 0.01;
+			}
+			dragX = e.targetTouches[0].clientX;
+			dragY = e.targetTouches[0].clientY;
 		}
 	});
 
